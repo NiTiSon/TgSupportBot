@@ -1,15 +1,23 @@
 ﻿using Telegram.Bot;
 using Telegram.Bot.Types;
+using SSSR.Data;
+using VYaml.Serialization;
+
 namespace SSSR;
 
 public static class Program
 {
+    private static readonly FileInfo TokenFile = new("./token.txt");
+    private static readonly FileInfo ConfigFile = new("./config.yml");
+
     public static async Task<int> Main()
     {
-        FileInfo tokenFile = new("./token.txt");
+        using FileStream configStream = ConfigFile.OpenRead();  //Чтение ямл конфига
+        Config.Value = await YamlSerializer.DeserializeAsync<Config>(configStream); 
+        Console.WriteLine(Config.Value);
 
         string? token = null;
-        if (!tokenFile.Exists)
+        if (!TokenFile.Exists)
         {
             Console.Error.WriteLine("Не предотавлен файл token.txt");
         }
@@ -17,7 +25,7 @@ public static class Program
         {
             try
             {
-                token = await File.ReadAllTextAsync(tokenFile.FullName);
+                token = await File.ReadAllTextAsync(TokenFile.FullName);
             }
             catch (Exception ex)
             {
