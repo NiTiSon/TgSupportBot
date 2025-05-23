@@ -4,9 +4,9 @@ using VYaml.Serialization;
 namespace TgSupportBot.Data;
 
 [YamlObject(NamingConvention.SnakeCase)]
-public partial record struct Config
+public partial record struct Option
 {
-    public Option[] Options;
-
-    public static Config Value { get; internal set; } 
+    public string Text;
+    public string? Hint;
+    public Option[]? Options;
 }

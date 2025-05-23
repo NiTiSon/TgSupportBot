@@ -4,6 +4,7 @@ using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using TgSupportBot.Data;
+using TgSupportBot.Controllers;
 
 namespace TgSupportBot;
 
@@ -15,7 +16,7 @@ public class BotEngine
     public BotEngine(TelegramBotClient botClient)
     {
         _botClient = botClient;
-        _users = new UserController();
+        _users = new UserController(Config.Value);
     }
     // Create a listener so that we can wait for messages to be sent to the bot
     public async Task ListenForMessagesAsync()
@@ -35,58 +36,29 @@ public class BotEngine
 
         var me = await _botClient.GetMe();
 
-        Console.WriteLine($"Start listening for @{me.Username}");
+        Console.WriteLine($"=== BOT INITIALIZED @{me.Username} ===");
         Console.ReadLine();
     }
     private async Task HandleUpdateAsync(ITelegramBotClient botClient,
         Update update, CancellationToken cancellationToken)
     {
-        if (update.CallbackQuery is { } query)
+        if (update.Message is Message message)
         {
-            UserContext? context = _users.GetUserContext(query.From.Id);
-            
-            if (context is null) // После вызова /start
-            {
-                Option? selectedOption = Config.Value.Options?.FirstOrDefault(t => t.Text == query.Data);
-
-                _users.AppendContext(query.From.Id, selectedOption!.Value);
-            }
-            else if (context.PressedButton is {} option)
-            {
-                Option? selectedOption = option.Options?.FirstOrDefault(t => t.Text == query.Data);
-
-                if (selectedOption is null)
-                {
-                    await botClient.SendMessage(query.Message!.Chat.Id, "Данное сообщение уже устарело.", cancellationToken: cancellationToken);
-                    return;
-                }
-
-                _users.AppendContext(query.From.Id, selectedOption.Value);
-            }
-
-            return;
+            await HandleMessageAsync(botClient, update, message, cancellationToken);
         }
+    }
 
-        // Only process Message updates
-        if (update.Message is not { } message)
-        {
-            return;
-        }
-
-        // Only process text messages
-        if (message.Text is not { } messageText)
-        {
-            return;
-        }
-
-        //Log in console
-        Console.WriteLine($"Received a '{messageText}' message in chat {message.Chat.Id}.");
-
+    private async Task HandleMessageAsync(ITelegramBotClient botClient, Update update, Message message, CancellationToken cancellationToken)
+    {
         if (message.Text == "/start")
         {
-            _users.ClearContext(message.From!.Id);
-            await OnStartHandle(botClient, update, cancellationToken);
-            return;
+            await botClient.SetMyCommands([
+                new BotCommand("/start", "Перезапустить бота")
+            ], cancellationToken: cancellationToken);
+            await botClient.SendMessage(message.Chat.Id,
+            """
+            Выберите 
+            """);
         }
     }
 
