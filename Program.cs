@@ -1,9 +1,9 @@
 ﻿using Telegram.Bot;
 using Telegram.Bot.Types;
-using SSSR.Data;
+using TgSupportBot.Data;
 using VYaml.Serialization;
 
-namespace SSSR;
+namespace TgSupportBot;
 
 public static class Program
 {
@@ -12,14 +12,14 @@ public static class Program
 
     public static async Task<int> Main()
     {
-        using FileStream configStream = ConfigFile.OpenRead();  //Чтение ямл конфига
+        await using FileStream configStream = ConfigFile.OpenRead();  //Чтение ямл конфига
         Config.Value = await YamlSerializer.DeserializeAsync<Config>(configStream); 
         Console.WriteLine(Config.Value);
 
         string? token = null;
         if (!TokenFile.Exists)
         {
-            Console.Error.WriteLine("Не предотавлен файл token.txt");
+            await Console.Error.WriteLineAsync("Не предотавлен файл token.txt");
         }
         else
         {
@@ -29,13 +29,13 @@ public static class Program
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine(ex.ToString());
+                await Console.Error.WriteLineAsync(ex.ToString());
             }
         }
 
         if (string.IsNullOrEmpty(token))
         {
-            Console.Error.WriteLine("Токен пустой");
+            await Console.Error.WriteLineAsync("Токен пустой");
             return -1;
         }
 

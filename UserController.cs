@@ -1,14 +1,8 @@
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
-using Telegram.Bot;
-using Telegram.Bot.Exceptions;
-using Telegram.Bot.Polling;
-using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.ReplyMarkups;
-using SSSR.Data;
+using TgSupportBot.Data;
 
-namespace SSSR;
+namespace TgSupportBot;
 
 public sealed class UserController
 {

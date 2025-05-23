@@ -1,7 +1,7 @@
 using VYaml.Annotations;
 using VYaml.Serialization;
 
-namespace SSSR.Data;
+namespace TgSupportBot.Data;
 
 [YamlObject(NamingConvention.SnakeCase)]
 public partial record struct Config

@@ -2,12 +2,10 @@ using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
-using VYaml.Serialization;
-using SSSR.Data;
+using TgSupportBot.Data;
 
-namespace SSSR;
+namespace TgSupportBot;
 
 public class BotEngine
 {
@@ -17,14 +15,14 @@ public class BotEngine
     public BotEngine(TelegramBotClient botClient)
     {
         _botClient = botClient;
-        _users = new();
+        _users = new UserController();
     }
     // Create a listener so that we can wait for messages to be sent to the bot
     public async Task ListenForMessagesAsync()
     {
         using var cts = new CancellationTokenSource();
 
-        var receiverOptions = new ReceiverOptions
+        ReceiverOptions receiverOptions = new ReceiverOptions
         {
             AllowedUpdates = [], // receive all update types
         };
@@ -59,7 +57,7 @@ public class BotEngine
 
                 if (selectedOption is null)
                 {
-                    await botClient.SendMessage(query.Message!.Chat.Id, "Данное сообщение уже устарело.");
+                    await botClient.SendMessage(query.Message!.Chat.Id, "Данное сообщение уже устарело.", cancellationToken: cancellationToken);
                     return;
                 }
 
@@ -96,10 +94,9 @@ public class BotEngine
     {
         //Inline keybord
         List<List<InlineKeyboardButton>> root = new(capacity: 4);
-        for (int i = 0; i < Config.Value.Options.Length; i++)
+        foreach (Option option in Config.Value.Options)
         {
-            Option option = Config.Value.Options[i];
-            root.Add(new() { InlineKeyboardButton.WithCallbackData(option.Text) });
+            root.Add([InlineKeyboardButton.WithCallbackData(option.Text)]);
         }
 
         //Reply keyboard
@@ -109,20 +106,21 @@ public class BotEngine
         await botClient.SendMessage(
             update.Message!.Chat.Id,
             "Выберете категорию описывающую вашу проблему:",
-            replyMarkup: replyKeyboard);
+            replyMarkup: replyKeyboard,
+            cancellationToken: cancellationToken);
     }
 
     private Task HandlePollingErrorAsync(ITelegramBotClient botClient,
         Exception exception, CancellationToken cancellationToken)
     {
-        var ErrorMessage = exception switch
+        string errorMessage = exception switch
         {
             ApiRequestException apiRequestException
                 => $"Telegram API Error:\n[{apiRequestException.ErrorCode}]\n{apiRequestException.Message}",
             _ => exception.ToString()
         };
 
-        Console.WriteLine(ErrorMessage);
+        Console.WriteLine(errorMessage);
         return Task.CompletedTask;
     }
 }
