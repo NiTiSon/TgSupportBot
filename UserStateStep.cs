@@ -1,9 +1,10 @@
 ﻿namespace TgSupportBot;
 
-public enum UserState
+public enum UserStateStep
 {
 	None = 0,
 	RequireBrief,
 	RequireDescription,
+	RequireLocation,
 	RequireAttachments,
 }

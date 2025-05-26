@@ -1,51 +1,34 @@
-﻿using Telegram.Bot;
-using VYaml.Serialization;
-using TgSupportBot.Controllers;
-using TgSupportBot.Data;
+﻿using Serilog;
+using Serilog.Core;
+using Telegram.Bot;
 
 namespace TgSupportBot;
 
 public static class Program
 {
     private static readonly FileInfo TokenFile = new("./token.txt");
-    private static readonly FileInfo ConfigFile = new("./config.yml");
 
     public static async Task<int> Main()
     {
-        using FileStream configStream = ConfigFile.OpenRead();  //Чтение ямл конфига
-        Config.Value = await YamlSerializer.DeserializeAsync<Config>(configStream); 
-        Console.WriteLine(Config.Value);
+        Log.Logger = new LoggerConfiguration()
+            #if DEBUG
+            .MinimumLevel.Verbose()
+            #endif
+            .WriteTo.Console()
+            .WriteTo.File("./latest.log")
+            .CreateLogger();
 
-        string? token = null;
-        if (!TokenFile.Exists)
+        try
         {
-            Console.Error.WriteLine("Не предотавлен файл token.txt");
+            string token = await File.ReadAllTextAsync(TokenFile.FullName);
+            
+            BotEngine metBot = new(token);
+            await metBot.ListenForMessagesAsync();
         }
-        else
+        catch (Exception e)
         {
-            try
-            {
-                token = await File.ReadAllTextAsync(TokenFile.FullName);
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine(ex.ToString());
-            }
+            Log.Logger.Fatal(e, "An error occured during bot initialization");
         }
-
-        if (string.IsNullOrEmpty(token))
-        {
-            Console.Error.WriteLine("Токен пустой");
-            return -1;
-        }
-
-        TelegramBotClient botClient = new(token);
-
-        // Create a new bot instance
-        BotEngine metBot = new(botClient);
-
-        // Listen for messages sent to the bot
-        await metBot.ListenForMessagesAsync();
         return 0;
     }
 }
