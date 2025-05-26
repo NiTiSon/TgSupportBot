@@ -18,10 +18,11 @@ public class BotEngine
         _botClient = botClient;
         _users = new UserController(Config.Value);
     }
+    
     // Create a listener so that we can wait for messages to be sent to the bot
     public async Task ListenForMessagesAsync()
     {
-        using var cts = new CancellationTokenSource();
+        using CancellationTokenSource cts = new();
 
         ReceiverOptions receiverOptions = new ReceiverOptions
         {
@@ -33,8 +34,8 @@ public class BotEngine
             receiverOptions,
             cts.Token
         );
-
-        var me = await _botClient.GetMe();
+        
+        User me = await _botClient.GetMe(cts.Token);
 
         Console.WriteLine($"=== BOT INITIALIZED @{me.Username} ===");
         Console.ReadLine();
@@ -62,7 +63,7 @@ public class BotEngine
         }
     }
 
-    private async Task OnStartHandle(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+    private static async Task OnStartHandle(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         //Inline keybord
         List<List<InlineKeyboardButton>> root = new(capacity: 4);
@@ -82,7 +83,7 @@ public class BotEngine
             cancellationToken: cancellationToken);
     }
 
-    private Task HandlePollingErrorAsync(ITelegramBotClient botClient,
+    private static Task HandlePollingErrorAsync(ITelegramBotClient botClient,
         Exception exception, CancellationToken cancellationToken)
     {
         string errorMessage = exception switch
