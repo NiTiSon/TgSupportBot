@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using Serilog;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -9,8 +8,14 @@ namespace TgSupportBot;
 public sealed class UserStateController
 {
 	private readonly Dictionary<long, UserState> _userStates = [];
+    private readonly TelegramBotClient _botClient;
 
-	public UserState GetCurrentStateOrCreateNew(User user)
+    public UserStateController(TelegramBotClient botClient)
+    {
+        _botClient = botClient;
+    }
+
+    public UserState GetCurrentStateOrCreateNew(User user)
 	{
 		lock (_userStates)
 		{
@@ -33,7 +38,32 @@ public sealed class UserStateController
 		}
 	}
 
-	public async Task Release(ITelegramBotClient botClient, User user, CancellationToken cancellationToken)
+	public async Task<bool> RemoveLastMediaMessage(User user, CancellationToken cancellationToken = default)
+    {
+        Message? message;
+        lock (_userStates)
+        {
+            UserState? state = _userStates.GetValueOrDefault(user.Id);
+
+            message = state?.LastMediaMessage;
+			state?.AffectedMessages.Remove(message!);
+        }
+
+        if (message != null)
+        {
+            try
+            {
+                await _botClient.DeleteMessage(message.Chat.Id, message.Id, cancellationToken);
+				
+                return true;
+            }
+            catch (Exception) { }
+        }
+
+        return false;
+    }
+
+    public async Task Release(User user, CancellationToken cancellationToken = default)
 	{
 		IEnumerable<Message> messages;
 		lock (_userStates)
@@ -50,12 +80,12 @@ public sealed class UserStateController
 		
 		foreach (Message message in messages)
 		{
-			await botClient.DeleteMessage(message.Chat.Id, message.Id, cancellationToken);
+			await _botClient.DeleteMessage(message.Chat.Id, message.Id, cancellationToken);
 		}
 
 		lock (_userStates)
 		{
-			_userStates.Remove(user.Id);
+			Log.Information("_userStates.Remove(user.Id); #= {Result}", _userStates.Remove(user.Id));
 		}
 	}
 }

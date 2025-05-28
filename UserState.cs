@@ -1,12 +1,11 @@
-﻿using Telegram.Bot;
-using Telegram.Bot.Types;
+﻿using Telegram.Bot.Types;
 
 namespace TgSupportBot;
 
 public record UserState
 {
-	public User User { get; set; }
-	public List<Message> AffectedMessages { get; } = new(capacity: 8);
+	public required User User { get; init; }
+	public HashSet<Message> AffectedMessages { get; } = new HashSet<Message>(capacity: 8);
 	public List<FileBase> Files { get; } = new(capacity: 4);
 	public UserStateStep Step { get; set; }
 	public string Brief { get; set; }
