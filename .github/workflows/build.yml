@@ -1,0 +1,40 @@
+name: Build
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [linux-x64, linux-arm64, win-x64, win-arm64]
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+        cache: true
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet publish -c Release -r ${{ matrix.os }} --self-contained true -p:PublishTrimmed=true --no-restore -o ./build/
+    - name: Upload Builds
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.os }}
+        path: ./build/${{ matrix.os }}/
+
+    - name: Zip Builds
+      run: zip -r ./build/${{ matrix.os }}.zip ./build/${{ matrix.os }}/
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: ./build/*.zip
+        tag: ${{ github.ref }}
+        overwrite: true
+        file_glob: true
