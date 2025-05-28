@@ -17,18 +17,14 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 9.0.x
-    - name: Restore dependencies
-      run: dotnet restore
+
     - name: Build
-      run: dotnet publish ./TgSupportBot.csproj -c Release -r ${{ matrix.os }} --self-contained true -p:PublishTrimmed=true --no-restore -o ./build/
-    - name: Upload Builds
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ matrix.os }}
-        path: ./build/${{ matrix.os }}/
+      run: dotnet publish ./TgSupportBot.csproj -c Release -r win-x64 --self-contained true -p:PublishTrimmed=true -p:PublishSingleFile=true -o ./build/${{ matrix.os }}/
 
     - name: Zip Builds
-      run: zip -r ./build/${{ matrix.os }}.zip ./build/${{ matrix.os }}/
+      run: |
+        cd ./build/
+        zip -r ${{ matrix.os }}.zip ./${{ matrix.os }}/
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
       with:
