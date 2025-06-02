@@ -182,4 +182,7 @@
 
 Активные часы работы тех. поддержки от 9:00 до 18:00</value>
   </data>
+  <data name="ReportCancellationResponse" xml:space="preserve">
+    <value>Вы отменили создание заявки</value>
+  </data>
 </root>

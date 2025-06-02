@@ -45,8 +45,7 @@ public sealed class UserStateController
         {
             UserState? state = _userStates.GetValueOrDefault(user.Id);
 
-            message = state?.LastMediaMessage;
-			state?.AffectedMessages.Remove(message!);
+            message = state?.PopLastMediaMessage();
         }
 
         if (message != null)
@@ -62,6 +61,9 @@ public sealed class UserStateController
 
         return false;
     }
+
+	public Task Release(UserState state, CancellationToken cancellationToken = default)
+		=> Release(state.User, cancellationToken);
 
     public async Task Release(User user, CancellationToken cancellationToken = default)
 	{

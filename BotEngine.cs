@@ -92,8 +92,18 @@ public sealed class BotEngine
 	private async Task HandleCallbackQueryAsync(ITelegramBotClient botClient, CallbackQuery callbackQuery, Update update, CancellationToken cancellationToken)
 	{
 		UserState state = StateController.GetCurrentStateOrCreateNew(callbackQuery.From);
-		
-		if (state.Step == UserStateStep.RequireAttachments)
+
+		if (callbackQuery.Data == Localization.ReportCancelButton)
+		{
+			long chatId = state.AffectedMessages.Last().Chat.Id;
+			int? threadId = state.AffectedMessages.LastOrDefault()?.MessageThreadId;
+			await botClient.SendMessage(chatId,
+				Localization.ReportCancellationResponse,
+				messageThreadId: threadId,
+				cancellationToken: cancellationToken);
+			await StateController.Release(state, cancellationToken);
+		}
+		else if (state.Step == UserStateStep.RequireAttachments)
 		{
 			long chatId = state.AffectedMessages.Last().Chat.Id;
 			int? threadId = state.AffectedMessages.LastOrDefault()?.MessageThreadId;
@@ -108,7 +118,7 @@ public sealed class BotEngine
 					messageThreadId: threadId,
 					cancellationToken: cancellationToken);
 
-				await SendAldumFromState(chatId, threadId, state, cancellationToken);
+				await SendAlbumFromState(chatId, threadId, state, cancellationToken);
 
 				if (DateTime.Now.Hour is >= 18 or < 9)
 				{
@@ -123,7 +133,7 @@ public sealed class BotEngine
 		}
 	}
 
-	private async Task SendAldumFromState(long chatId, int? threadId, UserState state, CancellationToken cancellationToken = default)
+	private async Task SendAlbumFromState(long chatId, int? threadId, UserState state, CancellationToken cancellationToken = default)
 	{
 		switch (state.Files.Count)
 		{
@@ -165,7 +175,7 @@ public sealed class BotEngine
 
 	private async Task HandleMessageAsync(ITelegramBotClient botClient, Update update, Message message, CancellationToken cancellationToken)
 	{
-		if ((message.Text == "/start" || message.Text == "/start@" + Me.Username) && message.Chat.Type == ChatType.Private )
+		if ((message.Text == "/start" || message.Text == "/start@" + Me.Username) && message.Chat.Type == ChatType.Private)
 		{
 			await botClient.SendMessage(message.Chat.Id,$"Данный бот не работает в личном чате, чтобы составить заявку: перейдите в группу.", cancellationToken: cancellationToken);
 		}
@@ -176,8 +186,8 @@ public sealed class BotEngine
 			UserState state = StateController.GetCurrentStateOrCreateNew(message.From!);
 			Message botMessage = await botClient.SendMessage(message.Chat.Id, "Опишите свою проблему (вкратце):",
 				messageThreadId: message.MessageThreadId, cancellationToken: cancellationToken);
-			state.AffectedMessages.Add(botMessage);
-			state.AffectedMessages.Add(message);
+			state.AffectMessage(botMessage);
+			state.AffectMessage(message);
 			state.Step = UserStateStep.RequireBrief;
 		}
 		else if (message.Chat.Type == ChatType.Supergroup)
@@ -185,6 +195,7 @@ public sealed class BotEngine
 			UserState state = StateController.GetCurrentStateOrCreateNew(message.From!);
 
 			Message botMessage;
+			InlineKeyboardMarkup keyboard;
 			switch (state.Step)
 			{
 				case UserStateStep.None:
@@ -195,13 +206,17 @@ public sealed class BotEngine
 					state.Brief = message.Text!;
 
 					if (!await RequireOnlyText(state, message, cancellationToken)) return;
+					keyboard = new InlineKeyboardMarkup(
+						InlineKeyboardButton.WithCallbackData(Localization.ReportCancelButton)
+					);
 					botMessage = await botClient.SendMessage(message.Chat.Id,
 						Localization.RequireDescriptionMessage,
 						messageThreadId: message.MessageThreadId,
+						replyMarkup: keyboard,
 						cancellationToken: cancellationToken);
 
-					state.AffectedMessages.Add(message);
-					state.AffectedMessages.Add(botMessage);
+					state.AffectMessage(message);
+					state.AffectMessage(botMessage);
 					state.Step = UserStateStep.RequireDescription;
 					break;
 				case UserStateStep.RequireDescription:
@@ -209,13 +224,18 @@ public sealed class BotEngine
 					state.Description = message.Text!;
 
 					if (!await RequireOnlyText(state, message, cancellationToken)) return;
+					keyboard = new InlineKeyboardMarkup(
+						InlineKeyboardButton.WithCallbackData(Localization.ReportCancelButton)
+					);
+					
 					botMessage = await botClient.SendMessage(message.Chat.Id,
 						Localization.RequireLocationMessage,
 						messageThreadId: message.MessageThreadId,
+						replyMarkup: keyboard,
 						cancellationToken: cancellationToken);
 
-					state.AffectedMessages.Add(message);
-					state.AffectedMessages.Add(botMessage);
+					state.AffectMessage(message);
+					state.AffectMessage(botMessage);
 					state.Step = UserStateStep.RequireLocation;
 					break;
 				case UserStateStep.RequireLocation:
@@ -223,15 +243,18 @@ public sealed class BotEngine
 					state.Location = message.Text!;
 
 					if (!await RequireOnlyText(state, message, cancellationToken)) return;
-					InlineKeyboardMarkup keyboard = new(InlineKeyboardButton.WithCallbackData(Localization.ReportSkipAttachments));
+					keyboard = new InlineKeyboardMarkup(
+						InlineKeyboardButton.WithCallbackData(Localization.ReportSkipAttachments),
+						InlineKeyboardButton.WithCallbackData(Localization.ReportCancelButton)
+						);
 					botMessage = await botClient.SendMessage(message.Chat.Id,
 						Localization.RequireAttachmentMessage,
-						replyMarkup: keyboard,
 						messageThreadId: message.MessageThreadId,
+						replyMarkup: keyboard,
 						cancellationToken: cancellationToken);
 
-					state.AffectedMessages.Add(message);
-					state.AffectedMessages.Add(botMessage);
+					state.AffectMessage(message);
+					state.AffectMessage(botMessage);
 					state.Step = UserStateStep.RequireAttachments;
 					break;
 				case UserStateStep.RequireAttachments:
@@ -245,7 +268,7 @@ public sealed class BotEngine
 						{
 							state.Files.Add(message.Video);
 						}
-						state.AffectedMessages.Add(message);
+						state.AffectMessage(message);
 
 						await Task.Delay(AverageTimeBetweenMediaMessages, cancellationToken);
 
@@ -254,7 +277,11 @@ public sealed class BotEngine
 
 						await StateController.RemoveLastMediaMessage(message.From!, cancellationToken);
 
-						InlineKeyboardMarkup inlineKeyboard = new(InlineKeyboardButton.WithCallbackData(Localization.ReportCreateButton));
+						InlineKeyboardMarkup inlineKeyboard = new []
+						{
+							new[] { InlineKeyboardButton.WithCallbackData(Localization.ReportCreateButton) },
+							new[] { InlineKeyboardButton.WithCallbackData(Localization.ReportCancelButton) }
+						};
 
 						int imageCount = state.Files.OfType<PhotoSize>().Count();
 						botMessage = state.LastMediaMessage = await botClient.SendMessage(
@@ -263,11 +290,12 @@ public sealed class BotEngine
 								imageCount,
 								GetLocalizationForImage(imageCount),
 								state.Files.OfType<Video>().Count()),
+							parseMode: ParseMode.MarkdownV2,
 							replyMarkup: inlineKeyboard,
 							messageThreadId: message.MessageThreadId,
 							cancellationToken: cancellationToken);
 
-						state.AffectedMessages.Add(botMessage);
+						state.AffectMessage(botMessage);
 					}
 					break;
 				default:
@@ -282,7 +310,7 @@ public sealed class BotEngine
 	{
 		if (message.Text?.Length > maximum)
 		{
-			state.AffectedMessages.Add(await BotClient.SendMessage(message.Chat, Localization.MessageMaxLimitMessage_1.Format(maximum), messageThreadId: message.MessageThreadId, cancellationToken: cancellationToken));
+			state.AffectMessage(await BotClient.SendMessage(message.Chat, Localization.MessageMaxLimitMessage_1.Format(maximum), messageThreadId: message.MessageThreadId, cancellationToken: cancellationToken));
 			return false;
 		}
 
@@ -294,8 +322,8 @@ public sealed class BotEngine
 		if (message.Photo != null
 		 || message.Video != null)
 		{
-			state.AffectedMessages.Add(message);
-			state.AffectedMessages.Add(
+			state.AffectMessage(message);
+			state.AffectMessage(
 				await BotClient.SendMessage(message.Chat.Id,
 					Localization.MessageOnlyTextLimit,
 					messageThreadId : message.MessageThreadId,
@@ -323,13 +351,13 @@ public sealed class BotEngine
 		return Task.CompletedTask;
 	}
 
-	private static string GetLocalizationForImage(int quanity)
+	private static string GetLocalizationForImage(int quantity)
 	{
-		if (quanity == 1) return Localization.ImageOne;
+		if (quantity == 1) return Localization.ImageOne;
 
 		unchecked
 		{
-			int end = quanity % 10;
+			int end = quantity % 10;
 
 			return end switch
 			{
