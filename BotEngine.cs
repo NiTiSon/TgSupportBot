@@ -93,6 +93,11 @@ public sealed class BotEngine
 	{
 		UserState state = StateController.GetCurrentStateOrCreateNew(callbackQuery.From);
 
+		if (state.AffectedMessages.All(t => t.Id != callbackQuery.Message?.Id))
+		{
+			return;
+		}
+
 		if (callbackQuery.Data == Localization.ReportCancelButton)
 		{
 			long chatId = state.AffectedMessages.Last().Chat.Id;
@@ -183,9 +188,16 @@ public sealed class BotEngine
 		if ((message.Text == "/report" || message.Text == "/report@" + Me.Username) &&
 			message.Chat.Type == ChatType.Supergroup)
 		{
+			InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup(
+				InlineKeyboardButton.WithCallbackData(Localization.ReportCancelButton)
+			);
+			
 			UserState state = StateController.GetCurrentStateOrCreateNew(message.From!);
-			Message botMessage = await botClient.SendMessage(message.Chat.Id, "Опишите свою проблему (вкратце):",
-				messageThreadId: message.MessageThreadId, cancellationToken: cancellationToken);
+			Message botMessage = await botClient.SendMessage(message.Chat.Id,
+				Localization.RequireBriefMessage,
+				messageThreadId: message.MessageThreadId,
+				replyMarkup: keyboard,
+				cancellationToken: cancellationToken);
 			state.AffectMessage(botMessage);
 			state.AffectMessage(message);
 			state.Step = UserStateStep.RequireBrief;
