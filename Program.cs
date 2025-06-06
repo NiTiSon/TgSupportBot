@@ -1,4 +1,5 @@
-﻿using Serilog;
+﻿using System.Reflection;
+using Serilog;
 
 namespace TgSupportBot;
 
@@ -23,6 +24,7 @@ public static class Program
 			.WriteTo.File(LogPath)
 			.CreateLogger();
 
+		WriteVersion();
 		try
 		{
 			string token = await File.ReadAllTextAsync(TokenFile.FullName);
@@ -32,9 +34,15 @@ public static class Program
 		}
 		catch (Exception e)
 		{
-			Log.Logger.Fatal(e, "Uncaughted exception during bot work.");
+			Log.Logger.Fatal(e, "Uncaught exception during bot work.");
 		}
 
 		return 0;
+	}
+
+	private static void WriteVersion()
+	{
+		string version = typeof(Program).Assembly.GetCustomAttributes<AssemblyInformationalVersionAttribute>().First().InformationalVersion;
+		Log.Information("Initializing bot, version: {Version}", version);
 	}
 }
