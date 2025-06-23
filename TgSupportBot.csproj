@@ -4,7 +4,7 @@
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net9.0</TargetFramework>
 		<RootNamespace>TgSupportBot</RootNamespace>
-		<Version>0.1.0</Version>
+		<Version>0.1.1</Version>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<NeutralLanguage>ru-ru</NeutralLanguage>
