@@ -1,14 +1,30 @@
 ﻿using System.Reflection;
 using Serilog;
+using Serilog.Core;
 
 namespace TgSupportBot;
 
 public static class Program
 {
 	private const string LogPath = "./latest.log";
-	private static readonly FileInfo TokenFile = new("./token.txt");
 
-	public static async Task<int> Main(string[] args)
+	public static void Main(string[] args)
+	{
+		try
+		{
+			MainAsync(args).GetAwaiter().GetResult();
+		}
+		catch (Exception e)
+		{
+			Log.Fatal(e, "Unhandled exception");
+		}
+		finally
+		{
+			Log.CloseAndFlush();
+		}
+	}
+
+	private static async Task<int> MainAsync(string[] args)
 	{
 		if (File.Exists(LogPath) && !args.Contains("--log-append"))
 		{
@@ -27,7 +43,21 @@ public static class Program
 		WriteVersion();
 		try
 		{
-			string token = await File.ReadAllTextAsync(TokenFile.FullName);
+			string? token = null;
+
+			foreach (FileInfo arg in GetTokenFileCandidates())
+			{
+				if (!File.Exists(arg.FullName)) continue;
+				
+				token = await File.ReadAllTextAsync(arg.FullName);
+				break;
+			}
+
+			if (token is null)
+			{
+				Log.Fatal("Token file not found, candidates are:\n\t{Files}", 
+					string.Join("\n\t", GetTokenFileCandidates()));
+			}
 			
 			BotEngine metBot = new(token);
 			await metBot.Start();
@@ -44,5 +74,28 @@ public static class Program
 	{
 		string version = typeof(Program).Assembly.GetCustomAttributes<AssemblyInformationalVersionAttribute>().First().InformationalVersion;
 		Log.Information("Initializing bot, version: {Version}", version);
+	}
+
+	private static HashSet<FileInfo> GetTokenFileCandidates()
+	{
+		HashSet<FileInfo> files = new(capacity: 2, new FileInfoByNameComparer());
+
+		files.Add(new FileInfo(Path.GetFullPath("./token.txt")));
+
+		string? location = Assembly.GetEntryAssembly()?.Location;
+
+		if (location is not null)
+		{
+			files.Add(new FileInfo(
+				Path.GetFullPath(
+					Path.Combine(
+						Path.GetDirectoryName(location) ?? string.Empty,
+						"token.txt"
+					)
+				)
+			));			
+		}
+
+		return files;
 	}
 }

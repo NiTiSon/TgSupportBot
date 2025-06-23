@@ -81,15 +81,15 @@ public sealed class BotEngine
 		}
 		if (update.Message is { } message)
 		{
-			await HandleMessageAsync(botClient, update, message, cancellationToken);
+			await HandleMessageAsync(botClient, message, cancellationToken);
 		}
 		if (update.CallbackQuery is { } callbackQuery)
 		{
-			await HandleCallbackQueryAsync(botClient, callbackQuery, update, cancellationToken);
+			await HandleCallbackQueryAsync(botClient, callbackQuery, cancellationToken);
 		}
 	}
 
-	private async Task HandleCallbackQueryAsync(ITelegramBotClient botClient, CallbackQuery callbackQuery, Update update, CancellationToken cancellationToken)
+	private async Task HandleCallbackQueryAsync(ITelegramBotClient botClient, CallbackQuery callbackQuery, CancellationToken cancellationToken)
 	{
 		UserState state = StateController.GetCurrentStateOrCreateNew(callbackQuery.From);
 
@@ -178,7 +178,7 @@ public sealed class BotEngine
 		}
 	}
 
-	private async Task HandleMessageAsync(ITelegramBotClient botClient, Update update, Message message, CancellationToken cancellationToken)
+	private async Task HandleMessageAsync(ITelegramBotClient botClient, Message message, CancellationToken cancellationToken)
 	{
 		if ((message.Text == "/start" || message.Text == "/start@" + Me.Username) && message.Chat.Type == ChatType.Private)
 		{

@@ -56,7 +56,10 @@ public sealed class UserStateController
 				
                 return true;
             }
-            catch (Exception) { }
+            catch (Exception e)
+            {
+	            Log.Warning(e, "Unable to delete message.");
+            }
         }
 
         return false;
