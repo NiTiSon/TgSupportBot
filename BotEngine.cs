@@ -338,6 +338,7 @@ public sealed class BotEngine
 				Localization.MessageMaxLimitMessage_1.Format(maximum), messageThreadId: message.MessageThreadId,
 				disableNotification: true,
 				cancellationToken: cancellationToken).ConfigureAwait(false));
+			state.AffectMessage(message);
 			return false;
 		}
 
@@ -349,7 +350,6 @@ public sealed class BotEngine
 		if (message.Photo != null
 		 || message.Video != null)
 		{
-			state.AffectMessage(message);
 			state.AffectMessage(
 				await BotClient.SendMessage(message.Chat.Id,
 					Localization.MessageOnlyTextLimit,
@@ -358,7 +358,7 @@ public sealed class BotEngine
 					cancellationToken: cancellationToken
 				)
 			);
-
+			state.AffectMessage(message);
 			return false;
 		}
 
