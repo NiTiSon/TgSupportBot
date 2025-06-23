@@ -185,4 +185,7 @@
   <data name="ReportCancellationResponse" xml:space="preserve">
     <value>Вы отменили создание заявки</value>
   </data>
+  <data name="PrivateMessagesForbiddenMessage" xml:space="preserve">
+    <value>Данный бот не работает в личном чате, чтобы составить заявку перейдите в группу</value>
+  </data>
 </root>

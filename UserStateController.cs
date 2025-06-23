@@ -90,7 +90,7 @@ public sealed class UserStateController
 
 		lock (_userStates)
 		{
-			Log.Information("_userStates.Remove(user.Id); #= {Result}", _userStates.Remove(user.Id));
+			Log.Verbose("_userStates.Remove(user.Id); #= {Result}", _userStates.Remove(user.Id));
 		}
 	}
 }

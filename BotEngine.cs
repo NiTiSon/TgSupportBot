@@ -62,6 +62,7 @@ public sealed class BotEngine
 		await botClient.SendMessage(
 			update.ChatMember!.Chat,
 			Localization.WelcomeMessage.Format(update.ChatMember.NewChatMember.User.Username),
+			disableNotification: true,
 			cancellationToken: cancellationToken);
 	}
 
@@ -105,6 +106,7 @@ public sealed class BotEngine
 			await botClient.SendMessage(chatId,
 				Localization.ReportCancellationResponse,
 				messageThreadId: threadId,
+				disableNotification: true,
 				cancellationToken: cancellationToken);
 			await StateController.Release(state, cancellationToken);
 		}
@@ -121,6 +123,7 @@ public sealed class BotEngine
 						state.Description,
 						state.Location ?? "Не указано"),
 					messageThreadId: threadId,
+					disableNotification: true,
 					cancellationToken: cancellationToken);
 
 				await SendAlbumFromState(chatId, threadId, state, cancellationToken);
@@ -130,6 +133,7 @@ public sealed class BotEngine
 					await botClient.SendMessage(chatId,
 						Localization.WorkTimeWarningMessage,
 						messageThreadId: threadId,
+						disableNotification: true,
 						cancellationToken: cancellationToken);
 				}
 
@@ -182,7 +186,10 @@ public sealed class BotEngine
 	{
 		if ((message.Text == "/start" || message.Text == "/start@" + Me.Username) && message.Chat.Type == ChatType.Private)
 		{
-			await botClient.SendMessage(message.Chat.Id,$"Данный бот не работает в личном чате, чтобы составить заявку: перейдите в группу.", cancellationToken: cancellationToken);
+			await botClient.SendMessage(message.Chat.Id,
+				Localization.PrivateMessagesForbiddenMessage,
+				disableNotification: true,
+				cancellationToken: cancellationToken);
 		}
 
 		if ((message.Text == "/report" || message.Text == "/report@" + Me.Username) &&
@@ -197,6 +204,7 @@ public sealed class BotEngine
 				Localization.RequireBriefMessage,
 				messageThreadId: message.MessageThreadId,
 				replyMarkup: keyboard,
+				disableNotification: true,
 				cancellationToken: cancellationToken);
 			state.AffectMessage(botMessage);
 			state.AffectMessage(message);
@@ -225,6 +233,7 @@ public sealed class BotEngine
 						Localization.RequireDescriptionMessage,
 						messageThreadId: message.MessageThreadId,
 						replyMarkup: keyboard,
+						disableNotification: true,
 						cancellationToken: cancellationToken);
 
 					state.AffectMessage(message);
@@ -244,6 +253,7 @@ public sealed class BotEngine
 						Localization.RequireLocationMessage,
 						messageThreadId: message.MessageThreadId,
 						replyMarkup: keyboard,
+						disableNotification: true,
 						cancellationToken: cancellationToken);
 
 					state.AffectMessage(message);
@@ -263,6 +273,7 @@ public sealed class BotEngine
 						Localization.RequireAttachmentMessage,
 						messageThreadId: message.MessageThreadId,
 						replyMarkup: keyboard,
+						disableNotification: true,
 						cancellationToken: cancellationToken);
 
 					state.AffectMessage(message);
@@ -305,6 +316,7 @@ public sealed class BotEngine
 							parseMode: ParseMode.MarkdownV2,
 							replyMarkup: inlineKeyboard,
 							messageThreadId: message.MessageThreadId,
+							disableNotification: true,
 							cancellationToken: cancellationToken);
 
 						state.AffectMessage(botMessage);
@@ -322,7 +334,10 @@ public sealed class BotEngine
 	{
 		if (message.Text?.Length > maximum)
 		{
-			state.AffectMessage(await BotClient.SendMessage(message.Chat, Localization.MessageMaxLimitMessage_1.Format(maximum), messageThreadId: message.MessageThreadId, cancellationToken: cancellationToken));
+			state.AffectMessage(await BotClient.SendMessage(message.Chat,
+				Localization.MessageMaxLimitMessage_1.Format(maximum), messageThreadId: message.MessageThreadId,
+				disableNotification: true,
+				cancellationToken: cancellationToken).ConfigureAwait(false));
 			return false;
 		}
 
@@ -339,6 +354,7 @@ public sealed class BotEngine
 				await BotClient.SendMessage(message.Chat.Id,
 					Localization.MessageOnlyTextLimit,
 					messageThreadId : message.MessageThreadId,
+					disableNotification: true,
 					cancellationToken: cancellationToken
 				)
 			);

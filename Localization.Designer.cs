@@ -114,6 +114,15 @@ namespace TgSupportBot {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Данный бот не работает в личном чате, чтобы составить заявку перейдите в группу.
+        /// </summary>
+        internal static string PrivateMessagesForbiddenMessage {
+            get {
+                return ResourceManager.GetString("PrivateMessagesForbiddenMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Отменить создание заявки.
         /// </summary>
         internal static string ReportCancelButton {

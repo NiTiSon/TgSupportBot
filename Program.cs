@@ -8,15 +8,16 @@ public static class Program
 {
 	private const string LogPath = "./latest.log";
 
-	public static void Main(string[] args)
+	public static int Main(string[] args)
 	{
 		try
 		{
-			MainAsync(args).GetAwaiter().GetResult();
+			return MainAsync(args).GetAwaiter().GetResult();
 		}
 		catch (Exception e)
 		{
 			Log.Fatal(e, "Unhandled exception");
+			return -9;
 		}
 		finally
 		{
@@ -57,6 +58,7 @@ public static class Program
 			{
 				Log.Fatal("Token file not found, candidates are:\n\t{Files}", 
 					string.Join("\n\t", GetTokenFileCandidates()));
+				return -1;
 			}
 			
 			BotEngine metBot = new(token);
