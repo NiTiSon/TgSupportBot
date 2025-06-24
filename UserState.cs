@@ -14,7 +14,7 @@ public record UserState
 		{
 			lock (_affectedMessages)
 			{
-				return new ReadOnlySet<Message>(_affectedMessages);
+				return new HashSet<Message>(_affectedMessages);
 			}
 		}
 	}

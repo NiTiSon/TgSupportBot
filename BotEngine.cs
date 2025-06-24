@@ -25,7 +25,14 @@ public sealed class BotEngine
 
 	public BotEngine(string token)
 	{
+#if NET6_0_OR_GREATER
 		ArgumentException.ThrowIfNullOrWhiteSpace(token);
+#else
+		if (string.IsNullOrWhiteSpace(token))
+        {
+	        throw new ArgumentException(null, nameof(token));
+		}	
+#endif
 		BotClient = new TelegramBotClient(token);
 		StateController = new UserStateController(BotClient);
 	}
@@ -174,7 +181,7 @@ public sealed class BotEngine
 						cancellationToken: cancellationToken
 					);
 
-					album.RemoveRange(0, int.Min(10, album.Count));
+					album.RemoveRange(0, Math.Min(10, album.Count));
 				}
 
 
@@ -383,15 +390,12 @@ public sealed class BotEngine
 	{
 		if (quantity == 1) return Localization.ImageOne;
 
-		unchecked
-		{
-			int end = quantity % 10;
+		int end = quantity % 10;
 
-			return end switch
-			{
-				1 or 2 or 3 or 4 => Localization.ImageFew,
-				_ => Localization.ImageMany
-			};
-		}
+		return end switch
+		{
+			1 or 2 or 3 or 4 => Localization.ImageFew,
+			_ => Localization.ImageMany
+		};
 	}
 }

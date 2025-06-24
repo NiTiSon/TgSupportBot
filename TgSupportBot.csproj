@@ -2,9 +2,10 @@
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
-		<TargetFramework>net9.0</TargetFramework>
+		<TargetFrameworks>net5.0;net9.0</TargetFrameworks>
 		<RootNamespace>TgSupportBot</RootNamespace>
 		<Version>0.1.1</Version>
+		<LangVersion>13.0</LangVersion>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<NeutralLanguage>ru-ru</NeutralLanguage>

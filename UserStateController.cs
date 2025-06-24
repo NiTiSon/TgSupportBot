@@ -17,6 +17,7 @@ public sealed class UserStateController
 
     public UserState GetCurrentStateOrCreateNew(User user)
 	{
+#if NET6_0_OR_GREATER
 		lock (_userStates)
 		{
 			ref UserState? state = ref CollectionsMarshal.GetValueRefOrAddDefault(_userStates, user.Id, out bool exists);
@@ -36,6 +37,21 @@ public sealed class UserStateController
 		
 			return state!;
 		}
+#else
+		lock (_userStates)
+		{
+			if (!_userStates.TryGetValue(user.Id, out UserState? state))
+			{
+				state = new UserState
+				{
+					User = user,
+				};
+				_userStates[user.Id] = state;
+			}
+
+			return state;
+		}
+#endif
 	}
 
 	public async Task<bool> RemoveLastMediaMessage(User user, CancellationToken cancellationToken = default)
